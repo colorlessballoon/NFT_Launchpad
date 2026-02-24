@@ -8,15 +8,22 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender) {
     uint256 public totalSupply;
     uint256 public maxSupply;
     uint256 public mintPrice;
+    bool public isActive;
 
     constructor(string memory _name, string memory _symbol, uint256 _maxSupply, uint256 _mintPrice)
         ERC721(_name, _symbol)
     {
         maxSupply = _maxSupply;
         mintPrice = _mintPrice;
+        isActive = false;
+    }
+
+    function setActive(bool _isActive) external onlyOwner {
+        isActive = _isActive;
     }
 
     function mint(uint256 quantity) external payable {
+        require(isActive, "Contract is not active");
         require(quantity > 0, "Quantity must be greater than 0");
         require(totalSupply + quantity <= maxSupply, "Max supply reached");
         require(msg.value == mintPrice * quantity, "Incorrect payment");

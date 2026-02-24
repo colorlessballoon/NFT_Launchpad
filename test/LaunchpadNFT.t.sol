@@ -12,6 +12,7 @@ contract LaunchpadNFTTest is Test {
 
     function setUp() public {
         launchpadNFT = new LaunchpadNFT("LaunchpadNFT", "LPNFT", 100, 0.01 ether);
+        launchpadNFT.setActive(true);
     }
 
     function testMintSuccess() public {
@@ -53,6 +54,24 @@ contract LaunchpadNFTTest is Test {
         launchpadNFT.withdraw();
         uint256 ownerBalanceAfter = address(this).balance;
         assertGt(ownerBalanceAfter, ownerBalanceBefore);
+    }
+
+    function testMintRevertIfMintInactive() public {
+        vm.deal(user, 1 ether);
+        launchpadNFT.setActive(false);
+        vm.prank(user);
+        vm.expectRevert("Contract is not active");
+        launchpadNFT.mint{value: 0.01 ether}(1);
+        vm.stopPrank();
+        assertEq(launchpadNFT.totalSupply(), 0);
+    }
+
+    function testMintAfterActivating() public {
+        vm.deal(user, 1 ether);
+        vm.prank(user);
+        launchpadNFT.mint{value: 0.01 ether}(1);
+        vm.stopPrank();
+        assertEq(launchpadNFT.totalSupply(), 1);
     }
 
     receive() external payable {}
