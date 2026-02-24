@@ -29,6 +29,11 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender){
         }
     }
 
+    function withdraw() external onlyOwner {
+        (bool success, ) = payable(owner()).call{value: address(this).balance}("");
+        require(success, "Transfer failed");
+    }
+
     
 
 }
