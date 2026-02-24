@@ -32,7 +32,6 @@ contract LaunchpadNFTTest is Test {
         assertEq(launchpadNFT.totalSupply(), 0);
     }
 
-    
     function testMintRevertIfExceedsMaxSupply() public {
         vm.deal(user, 100 ether);
         vm.prank(user);
@@ -57,5 +56,4 @@ contract LaunchpadNFTTest is Test {
     }
 
     receive() external payable {}
-    
 }
