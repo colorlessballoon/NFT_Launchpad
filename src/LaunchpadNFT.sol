@@ -3,12 +3,14 @@ pragma solidity ^0.8.0;
 
 import {ERC721} from "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
+import "openzeppelin-contracts/contracts/utils/cryptography/MerkleProof.sol";
 
 contract LaunchpadNFT is ERC721, Ownable(msg.sender) {
     uint256 public totalSupply;
     uint256 public maxSupply;
     uint256 public mintPrice;
     bool public isActive;
+    bytes32 public merkleRoot;
 
     constructor(string memory _name, string memory _symbol, uint256 _maxSupply, uint256 _mintPrice)
         ERC721(_name, _symbol)
@@ -22,15 +24,29 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender) {
         isActive = _isActive;
     }
 
-    function mint(uint256 quantity) external payable {
+    function setMerkleRoot(bytes32 _root) external onlyOwner {
+        merkleRoot = _root;
+    }
+
+    function mint(uint256 quantity, bytes32[] memory proof) public payable {
         require(isActive, "Contract is not active");
         require(quantity > 0, "Quantity must be greater than 0");
         require(totalSupply + quantity <= maxSupply, "Max supply reached");
         require(msg.value == mintPrice * quantity, "Incorrect payment");
-        for (uint256 i = 0; i < quantity; i++) {
-            _safeMint(msg.sender, totalSupply + 1);
-            totalSupply++;
+
+        if (merkleRoot != 0) {
+            bytes32 leaf = keccak256(abi.encodePacked(msg.sender));
+            require(MerkleProof.verify(proof, merkleRoot, leaf), "Not in whitelist");
         }
+        for (uint256 i = 0; i < quantity; i++) {
+            totalSupply++;
+            _safeMint(msg.sender, totalSupply + 1);
+        }
+    }
+
+    function mint(uint256 quantity) external payable {
+        bytes32[] memory _proof;
+        mint(quantity, _proof);
     }
 
     function withdraw() external onlyOwner {
