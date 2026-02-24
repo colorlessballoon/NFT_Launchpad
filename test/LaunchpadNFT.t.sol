@@ -82,7 +82,7 @@ contract LaunchpadNFTTest is Test {
         assertEq(launchpadNFT.totalSupply(), 1);
     }
 
-    function testMintNoInWhitelist() public{
+    function testMintNoInWhitelist() public {
         launchpadNFT.setMerkleRoot(merkleRoot);
         vm.deal(address(2), 1 ether);
         vm.prank(address(2));
