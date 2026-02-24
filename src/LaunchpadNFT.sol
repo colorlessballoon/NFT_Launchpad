@@ -19,6 +19,16 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender){
         mintPrice = _mintPrice;
     }
 
+    function mint(uint256 quantity) external payable {
+        require(quantity > 0, "Quantity must be greater than 0");
+        require(totalSupply + quantity <= maxSupply, "Max supply reached");
+        require(msg.value == mintPrice * quantity, "Incorrect payment");
+        for (uint256 i = 0; i < quantity; i++) {
+            _safeMint(msg.sender, totalSupply + 1);
+            totalSupply++;
+        }
+    }
+
     
 
 }
