@@ -4,9 +4,12 @@ pragma solidity ^0.8.0;
 import {ERC721} from "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import "openzeppelin-contracts/contracts/utils/cryptography/MerkleProof.sol";
+import "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 contract LaunchpadNFT is ERC721, Ownable(msg.sender) {
+    using Strings for uint256;
     //合约总铸造数量
+
     uint256 public totalSupply;
     //合约最大铸造数量
     uint256 public maxSupply;
@@ -24,17 +27,23 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender) {
     //公开销售开关
     bool public publicSaleActive;
 
+    string private baseTokenURI;
+    string public hiddenURI;
+    bool public revealed;
+
     constructor(
         string memory _name,
         string memory _symbol,
         uint256 _maxSupply,
         uint256 _mintPrice,
-        uint256 _maxPerWallet
+        uint256 _maxPerWallet,
+        string memory _hiddenURI
     ) ERC721(_name, _symbol) {
         maxSupply = _maxSupply;
         mintPrice = _mintPrice;
         isActive = false;
         maxPerWallet = _maxPerWallet;
+        hiddenURI = _hiddenURI;
     }
 
     function setActive(bool _isActive) external onlyOwner {
@@ -53,6 +62,14 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender) {
         merkleRoot = _root;
     }
 
+    function setBaseURI(string memory _baseURI) external onlyOwner {
+        baseTokenURI = _baseURI;
+    }
+
+    function reveal() external onlyOwner {
+        revealed = true;
+    }
+
     function mint(uint256 quantity, bytes32[] memory proof) public payable {
         require(isActive, "Contract is not active");
         require(quantity > 0, "Quantity must be greater than 0");
@@ -67,8 +84,8 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender) {
             }
         }
         for (uint256 i = 0; i < quantity; i++) {
-            totalSupply++;
             _safeMint(msg.sender, totalSupply + 1);
+            totalSupply++;
         }
         mintedPerWallet[msg.sender] += quantity;
     }
@@ -81,5 +98,13 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender) {
     function withdraw() external onlyOwner {
         (bool success,) = payable(owner()).call{value: address(this).balance}("");
         require(success, "Transfer failed");
+    }
+
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        require(_ownerOf(tokenId) != address(0), "Nonexistent token");
+        if (!revealed) {
+            return hiddenURI;
+        }
+        return string(abi.encodePacked(baseTokenURI, tokenId.toString(), ".json"));
     }
 }

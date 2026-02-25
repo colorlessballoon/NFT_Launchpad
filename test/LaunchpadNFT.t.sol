@@ -20,7 +20,7 @@ contract LaunchpadNFTTest is Test {
     //////////////////////////////////////////////////////////////*/
 
     function setUp() public {
-        launchpadNFT = new LaunchpadNFT("LaunchpadNFT", "LPNFT", MAX_SUPPLY, PRICE, MAX_PER_WALLET);
+        launchpadNFT = new LaunchpadNFT("LaunchpadNFT", "LPNFT", MAX_SUPPLY, PRICE, MAX_PER_WALLET, "hidden.json");
         launchpadNFT.setActive(true);
         proof.push(0x999bf57501565dbd2fdcea36efa2b9aef8340a8901e3459f4a4c926275d36cdb);
     }
@@ -68,7 +68,7 @@ contract LaunchpadNFTTest is Test {
     //////////////////////////////////////////////////////////////*/
 
     function testMintRevertIfExceedsMaxSupply() public {
-        LaunchpadNFT nft = new LaunchpadNFT("TestNFT", "TNFT", 100, PRICE, 200);
+        LaunchpadNFT nft = new LaunchpadNFT("TestNFT", "TNFT", 100, PRICE, 200, "hidden.json");
 
         nft.setActive(true);
         nft.setPublicSaleActive(true);
@@ -152,6 +152,30 @@ contract LaunchpadNFTTest is Test {
         uint256 ownerBalanceAfter = address(this).balance;
 
         assertGt(ownerBalanceAfter, ownerBalanceBefore);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                            WITHDRAW TEST
+    //////////////////////////////////////////////////////////////*/
+    function testTokenURIHiddenBeforeReveal() public {
+        launchpadNFT.setPublicSaleActive(true);
+        vm.deal(user, 1 ether);
+        vm.prank(user);
+        launchpadNFT.mint{value: PRICE}(1);
+
+        string memory uri = launchpadNFT.tokenURI(1);
+        assertEq(uri, "hidden.json");
+    }
+
+    function testTokenURIAfterReveal() public {
+        launchpadNFT.setPublicSaleActive(true);
+        vm.deal(user, 1 ether);
+        vm.prank(user);
+        launchpadNFT.mint{value: PRICE}(1);
+        launchpadNFT.setBaseURI("ipfs://base/");
+        launchpadNFT.reveal();
+        string memory uri = launchpadNFT.tokenURI(1);
+        assertEq(uri, "ipfs://base/1.json");
     }
 
     receive() external payable {}
