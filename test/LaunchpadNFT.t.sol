@@ -120,7 +120,6 @@ contract LaunchpadNFTTest is Test {
         vm.stopPrank();
         assertEq(launchpadNFT.totalSupply(), 2);
         assertEq(launchpadNFT.mintedPerWallet(user), 2);
-
     }
 
     receive() external payable {}

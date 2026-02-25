@@ -14,9 +14,13 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender) {
     mapping(address => uint256) public mintedPerWallet;
     uint256 public maxPerWallet;
 
-    constructor(string memory _name, string memory _symbol, uint256 _maxSupply, uint256 _mintPrice, uint256 _maxPerWallet)
-        ERC721(_name, _symbol)
-    {
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        uint256 _maxSupply,
+        uint256 _mintPrice,
+        uint256 _maxPerWallet
+    ) ERC721(_name, _symbol) {
         maxSupply = _maxSupply;
         mintPrice = _mintPrice;
         isActive = false;
