@@ -7,7 +7,7 @@ import "openzeppelin-contracts/contracts/utils/cryptography/MerkleProof.sol";
 import "openzeppelin-contracts/contracts/utils/Strings.sol";
 import "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 
-contract LaunchpadNFT is ERC721, Ownable(msg.sender), ReentrancyGuard  {
+contract LaunchpadNFT is ERC721, Ownable(msg.sender), ReentrancyGuard {
     using Strings for uint256;
     //合约总铸造数量
 
@@ -71,16 +71,16 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender), ReentrancyGuard  {
         revealed = true;
     }
 
-    function mint(uint256 quantity, bytes32[] memory _proof) external payable nonReentrant{
+    function mint(uint256 quantity, bytes32[] memory _proof) external payable nonReentrant {
         _mintLogic(quantity, _proof);
     }
 
-    function mint(uint256 quantity) external payable nonReentrant{
+    function mint(uint256 quantity) external payable nonReentrant {
         bytes32[] memory _proof;
         _mintLogic(quantity, _proof);
     }
 
-    function _mintLogic(uint256 quantity, bytes32[] memory proof) internal{
+    function _mintLogic(uint256 quantity, bytes32[] memory proof) internal {
         require(isActive, "Contract is not active");
         require(quantity > 0, "Quantity must be greater than 0");
         require(totalSupply + quantity <= maxSupply, "Max supply reached");
@@ -100,7 +100,7 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender), ReentrancyGuard  {
         mintedPerWallet[msg.sender] += quantity;
     }
 
-    function withdraw() external onlyOwner nonReentrant{
+    function withdraw() external onlyOwner nonReentrant {
         (bool success,) = payable(owner()).call{value: address(this).balance}("");
         require(success, "Transfer failed");
     }
