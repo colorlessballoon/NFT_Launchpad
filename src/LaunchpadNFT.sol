@@ -6,8 +6,9 @@ import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import "openzeppelin-contracts/contracts/utils/cryptography/MerkleProof.sol";
 import "openzeppelin-contracts/contracts/utils/Strings.sol";
 import "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
+import "openzeppelin-contracts/contracts/utils/Pausable.sol";
 
-contract LaunchpadNFT is ERC721, Ownable(msg.sender), ReentrancyGuard {
+contract LaunchpadNFT is ERC721, Ownable(msg.sender), ReentrancyGuard, Pausable {
     using Strings for uint256;
     //合约总铸造数量
 
@@ -71,11 +72,19 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender), ReentrancyGuard {
         revealed = true;
     }
 
-    function mint(uint256 quantity, bytes32[] memory _proof) external payable nonReentrant {
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
+    }
+
+    function mint(uint256 quantity, bytes32[] memory _proof) external payable nonReentrant whenNotPaused {
         _mintLogic(quantity, _proof);
     }
 
-    function mint(uint256 quantity) external payable nonReentrant {
+    function mint(uint256 quantity) external payable nonReentrant whenNotPaused {
         bytes32[] memory _proof;
         _mintLogic(quantity, _proof);
     }

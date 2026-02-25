@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import {Test} from "forge-std/Test.sol";
 import {LaunchpadNFT} from "../src/LaunchpadNFT.sol";
+import "openzeppelin-contracts/contracts/utils/Pausable.sol";
 
 contract LaunchpadNFTTest is Test {
     LaunchpadNFT public launchpadNFT;
@@ -176,6 +177,16 @@ contract LaunchpadNFTTest is Test {
         launchpadNFT.reveal();
         string memory uri = launchpadNFT.tokenURI(1);
         assertEq(uri, "ipfs://base/1.json");
+    }
+
+    function testMintRevertWhenPaused() public {
+        launchpadNFT.setPublicSaleActive(true);
+        launchpadNFT.pause();
+
+        vm.deal(user, 1 ether);
+        vm.prank(user);
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        launchpadNFT.mint{value: PRICE}(1);
     }
 
     receive() external payable {}
