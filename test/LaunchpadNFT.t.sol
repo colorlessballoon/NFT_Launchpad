@@ -4,7 +4,16 @@ pragma solidity ^0.8.0;
 import {Test} from "forge-std/Test.sol";
 import {LaunchpadNFT} from "../src/LaunchpadNFT.sol";
 import "openzeppelin-contracts/contracts/utils/Pausable.sol";
-
+import { 
+    ContractNotActive,
+    QuantityZero,
+    MaxSupplyReached,
+    IncorrectPayment,
+    ExceedsWalletLimit,
+    SaleNotActive,
+    NotInWhitelist,
+    TransferFailed
+} from "../src/errors/LaunchpadErrors.sol";
 contract LaunchpadNFTTest is Test {
     LaunchpadNFT public launchpadNFT;
 
@@ -47,7 +56,7 @@ contract LaunchpadNFTTest is Test {
         vm.deal(user, 1 ether);
 
         vm.prank(user);
-        vm.expectRevert("Incorrect payment");
+        vm.expectRevert(IncorrectPayment.selector);
         launchpadNFT.mint{value: 0.005 ether}(1);
     }
 
@@ -59,7 +68,7 @@ contract LaunchpadNFTTest is Test {
         vm.startPrank(user);
         launchpadNFT.mint{value: PRICE * 2}(2);
 
-        vm.expectRevert("Exceeds wallet limit");
+        vm.expectRevert(ExceedsWalletLimit.selector);
         launchpadNFT.mint{value: PRICE}(1);
         vm.stopPrank();
     }
@@ -79,7 +88,7 @@ contract LaunchpadNFTTest is Test {
         vm.startPrank(user);
         nft.mint{value: PRICE * 100}(100);
 
-        vm.expectRevert("Max supply reached");
+        vm.expectRevert(MaxSupplyReached.selector);
         nft.mint{value: PRICE}(1);
         vm.stopPrank();
 
@@ -107,7 +116,7 @@ contract LaunchpadNFTTest is Test {
         vm.deal(attacker, 1 ether);
 
         vm.prank(attacker);
-        vm.expectRevert("Not in whitelist");
+        vm.expectRevert(NotInWhitelist.selector);
         launchpadNFT.mint{value: PRICE}(1, proof);
     }
 
@@ -119,7 +128,7 @@ contract LaunchpadNFTTest is Test {
         vm.deal(user, 1 ether);
 
         vm.prank(user);
-        vm.expectRevert("Sale not active");
+        vm.expectRevert(SaleNotActive.selector);
         launchpadNFT.mint{value: PRICE}(1);
     }
 
@@ -130,7 +139,7 @@ contract LaunchpadNFTTest is Test {
         vm.deal(user, 1 ether);
 
         vm.prank(user);
-        vm.expectRevert("Contract is not active");
+        vm.expectRevert(ContractNotActive.selector);
         launchpadNFT.mint{value: PRICE}(1);
     }
 

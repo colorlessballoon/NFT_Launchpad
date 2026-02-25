@@ -7,7 +7,16 @@ import "openzeppelin-contracts/contracts/utils/cryptography/MerkleProof.sol";
 import "openzeppelin-contracts/contracts/utils/Strings.sol";
 import "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 import "openzeppelin-contracts/contracts/utils/Pausable.sol";
-
+import { 
+    ContractNotActive,
+    QuantityZero,
+    MaxSupplyReached,
+    IncorrectPayment,
+    ExceedsWalletLimit,
+    SaleNotActive,
+    NotInWhitelist,
+    TransferFailed
+} from "./errors/LaunchpadErrors.sol";
 contract LaunchpadNFT is ERC721, Ownable(msg.sender), ReentrancyGuard, Pausable {
     using Strings for uint256;
     //合约总铸造数量
@@ -90,16 +99,16 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender), ReentrancyGuard, Pausable 
     }
 
     function _mintLogic(uint256 quantity, bytes32[] memory proof) internal {
-        require(isActive, "Contract is not active");
-        require(quantity > 0, "Quantity must be greater than 0");
-        require(totalSupply + quantity <= maxSupply, "Max supply reached");
-        require(msg.value == mintPrice * quantity, "Incorrect payment");
-        require(mintedPerWallet[msg.sender] + quantity <= maxPerWallet, "Exceeds wallet limit");
-        require(whitelistSaleActive || publicSaleActive, "Sale not active");
+        if(!isActive) revert ContractNotActive();
+        if(quantity == 0) revert QuantityZero();
+        if(totalSupply + quantity > maxSupply) revert MaxSupplyReached();
+        if(msg.value != mintPrice * quantity) revert IncorrectPayment();
+        if(mintedPerWallet[msg.sender] + quantity > maxPerWallet) revert ExceedsWalletLimit();
+        if(!whitelistSaleActive && !publicSaleActive) revert SaleNotActive();
         if (whitelistSaleActive) {
             if (merkleRoot != 0) {
                 bytes32 leaf = keccak256(abi.encodePacked(msg.sender));
-                require(MerkleProof.verify(proof, merkleRoot, leaf), "Not in whitelist");
+                if(!MerkleProof.verify(proof, merkleRoot, leaf)) revert NotInWhitelist();
             }
         }
         for (uint256 i = 0; i < quantity; i++) {
@@ -111,7 +120,7 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender), ReentrancyGuard, Pausable 
 
     function withdraw() external onlyOwner nonReentrant {
         (bool success,) = payable(owner()).call{value: address(this).balance}("");
-        require(success, "Transfer failed");
+        if(!success) revert TransferFailed();
     }
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
