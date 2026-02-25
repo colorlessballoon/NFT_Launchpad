@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {ERC721} from "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
+import "openzeppelin-contracts/contracts/token/common/ERC2981.sol";
 import "openzeppelin-contracts/contracts/utils/cryptography/MerkleProof.sol";
 import "openzeppelin-contracts/contracts/utils/Strings.sol";
 import "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 import "openzeppelin-contracts/contracts/utils/Pausable.sol";
+import "erc721a/ERC721A.sol";
 import {
     ContractNotActive,
     QuantityZero,
@@ -18,12 +19,10 @@ import {
     TransferFailed
 } from "./errors/LaunchpadErrors.sol";
 
-contract LaunchpadNFT is ERC721, Ownable(msg.sender), ReentrancyGuard, Pausable {
+contract LaunchpadNFT is ERC721A, Ownable(msg.sender), ERC2981, ReentrancyGuard, Pausable {
     using Strings for uint256;
-    //合约总铸造数量
-
-    uint256 public totalSupply;
     //合约最大铸造数量
+
     uint256 public maxSupply;
     //铸造所需金额
     uint256 public mintPrice;
@@ -49,13 +48,20 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender), ReentrancyGuard, Pausable 
         uint256 _maxSupply,
         uint256 _mintPrice,
         uint256 _maxPerWallet,
-        string memory _hiddenURI
-    ) ERC721(_name, _symbol) {
+        string memory _hiddenURI,
+        address royaltyReceiver,
+        uint96 royaltyFee
+    ) ERC721A(_name, _symbol) {
         maxSupply = _maxSupply;
         mintPrice = _mintPrice;
         isActive = false;
         maxPerWallet = _maxPerWallet;
         hiddenURI = _hiddenURI;
+        _setDefaultRoyalty(royaltyReceiver, royaltyFee);
+    }
+
+    function _startTokenId() internal pure override returns (uint256) {
+        return 1;
     }
 
     function setActive(bool _isActive) external onlyOwner {
@@ -102,7 +108,7 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender), ReentrancyGuard, Pausable 
     function _mintLogic(uint256 quantity, bytes32[] memory proof) internal {
         if (!isActive) revert ContractNotActive();
         if (quantity == 0) revert QuantityZero();
-        if (totalSupply + quantity > maxSupply) revert MaxSupplyReached();
+        if (totalSupply() + quantity > maxSupply) revert MaxSupplyReached();
         if (msg.value != mintPrice * quantity) revert IncorrectPayment();
         if (mintedPerWallet[msg.sender] + quantity > maxPerWallet) revert ExceedsWalletLimit();
         if (!whitelistSaleActive && !publicSaleActive) revert SaleNotActive();
@@ -112,10 +118,7 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender), ReentrancyGuard, Pausable 
                 if (!MerkleProof.verify(proof, merkleRoot, leaf)) revert NotInWhitelist();
             }
         }
-        for (uint256 i = 0; i < quantity; i++) {
-            _safeMint(msg.sender, totalSupply + 1);
-            totalSupply++;
-        }
+        _safeMint(msg.sender, quantity);
         mintedPerWallet[msg.sender] += quantity;
     }
 
@@ -125,10 +128,14 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender), ReentrancyGuard, Pausable 
     }
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        require(_ownerOf(tokenId) != address(0), "Nonexistent token");
+        require(_exists(tokenId), "Nonexistent token");
         if (!revealed) {
             return hiddenURI;
         }
         return string(abi.encodePacked(baseTokenURI, tokenId.toString(), ".json"));
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721A, ERC2981) returns (bool) {
+        return super.supportsInterface(interfaceId);
     }
 }

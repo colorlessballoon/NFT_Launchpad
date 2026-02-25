@@ -31,7 +31,9 @@ contract LaunchpadNFTTest is Test {
     //////////////////////////////////////////////////////////////*/
 
     function setUp() public {
-        launchpadNFT = new LaunchpadNFT("LaunchpadNFT", "LPNFT", MAX_SUPPLY, PRICE, MAX_PER_WALLET, "hidden.json");
+        launchpadNFT = new LaunchpadNFT(
+            "LaunchpadNFT", "LPNFT", MAX_SUPPLY, PRICE, MAX_PER_WALLET, "hidden.json", address(this), 500
+        );
         launchpadNFT.setActive(true);
         proof.push(0x999bf57501565dbd2fdcea36efa2b9aef8340a8901e3459f4a4c926275d36cdb);
     }
@@ -79,7 +81,7 @@ contract LaunchpadNFTTest is Test {
     //////////////////////////////////////////////////////////////*/
 
     function testMintRevertIfExceedsMaxSupply() public {
-        LaunchpadNFT nft = new LaunchpadNFT("TestNFT", "TNFT", 100, PRICE, 200, "hidden.json");
+        LaunchpadNFT nft = new LaunchpadNFT("TestNFT", "TNFT", 100, PRICE, 200, "hidden.json", address(this), 500);
 
         nft.setActive(true);
         nft.setPublicSaleActive(true);
@@ -197,6 +199,12 @@ contract LaunchpadNFTTest is Test {
         vm.prank(user);
         vm.expectRevert(Pausable.EnforcedPause.selector);
         launchpadNFT.mint{value: PRICE}(1);
+    }
+
+    function testRoyaltyInfo() public {
+        (address receiver, uint256 royaltyAmount) = launchpadNFT.royaltyInfo(1, 1 ether);
+        assertEq(receiver, launchpadNFT.owner());
+        assertEq(royaltyAmount, 0.05 ether);
     }
 
     receive() external payable {}
