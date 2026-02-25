@@ -11,13 +11,16 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender) {
     uint256 public mintPrice;
     bool public isActive;
     bytes32 public merkleRoot;
+    mapping(address => uint256) public mintedPerWallet;
+    uint256 public maxPerWallet;
 
-    constructor(string memory _name, string memory _symbol, uint256 _maxSupply, uint256 _mintPrice)
+    constructor(string memory _name, string memory _symbol, uint256 _maxSupply, uint256 _mintPrice, uint256 _maxPerWallet)
         ERC721(_name, _symbol)
     {
         maxSupply = _maxSupply;
         mintPrice = _mintPrice;
         isActive = false;
+        maxPerWallet = _maxPerWallet;
     }
 
     function setActive(bool _isActive) external onlyOwner {
@@ -33,7 +36,7 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender) {
         require(quantity > 0, "Quantity must be greater than 0");
         require(totalSupply + quantity <= maxSupply, "Max supply reached");
         require(msg.value == mintPrice * quantity, "Incorrect payment");
-
+        require(mintedPerWallet[msg.sender] + quantity <= maxPerWallet, "Exceeds wallet limit");
         if (merkleRoot != 0) {
             bytes32 leaf = keccak256(abi.encodePacked(msg.sender));
             require(MerkleProof.verify(proof, merkleRoot, leaf), "Not in whitelist");
@@ -42,6 +45,7 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender) {
             totalSupply++;
             _safeMint(msg.sender, totalSupply + 1);
         }
+        mintedPerWallet[msg.sender] += quantity;
     }
 
     function mint(uint256 quantity) external payable {

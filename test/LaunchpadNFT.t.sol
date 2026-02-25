@@ -15,7 +15,7 @@ contract LaunchpadNFTTest is Test {
     address user = address(0x5B38Da6a701c568545dCfcB03FcB875f56beddC4);
 
     function setUp() public {
-        launchpadNFT = new LaunchpadNFT("LaunchpadNFT", "LPNFT", 100, 0.01 ether);
+        launchpadNFT = new LaunchpadNFT("LaunchpadNFT", "LPNFT", 100, 0.01 ether, 2);
         launchpadNFT.setActive(true);
         leaf = keccak256(abi.encodePacked(user));
         merkleRoot = 0x9d997719c0a5b5f6db9b8ac69a988be57cf324cb9fffd51dc2c37544bb520d65;
@@ -42,13 +42,15 @@ contract LaunchpadNFTTest is Test {
     }
 
     function testMintRevertIfExceedsMaxSupply() public {
+        LaunchpadNFT nft = new LaunchpadNFT("TestNFT", "TNFT", 100, 0.01 ether, 200);
+        nft.setActive(true);
         vm.deal(user, 100 ether);
         vm.prank(user);
-        launchpadNFT.mint{value: 1 ether}(100);
+        nft.mint{value: 1 ether}(100);
         vm.prank(user);
         vm.expectRevert("Max supply reached");
-        launchpadNFT.mint{value: 0.01 ether}(1);
-        assertEq(launchpadNFT.totalSupply(), 100);
+        nft.mint{value: 0.01 ether}(1);
+        assertEq(nft.totalSupply(), 100);
     }
 
     function testWithdraw() public {
@@ -97,6 +99,28 @@ contract LaunchpadNFTTest is Test {
         vm.prank(user);
         launchpadNFT.mint{value: 0.01 ether}(1, whitelistProof);
         assertEq(launchpadNFT.totalSupply(), 1);
+    }
+
+    function testMintWithinLimit() public {
+        launchpadNFT.setMerkleRoot(merkleRoot);
+        vm.deal(user, 1 ether);
+        vm.prank(user);
+        launchpadNFT.mint{value: 0.02 ether}(2, whitelistProof);
+        assertEq(launchpadNFT.totalSupply(), 2);
+        assertEq(launchpadNFT.mintedPerWallet(user), 2);
+    }
+
+    function testMintExceedsWalletLimit() public {
+        launchpadNFT.setMerkleRoot(merkleRoot);
+        vm.deal(user, 1 ether);
+        vm.startPrank(user);
+        launchpadNFT.mint{value: 0.02 ether}(2, whitelistProof);
+        vm.expectRevert("Exceeds wallet limit");
+        launchpadNFT.mint{value: 0.01 ether}(1, whitelistProof);
+        vm.stopPrank();
+        assertEq(launchpadNFT.totalSupply(), 2);
+        assertEq(launchpadNFT.mintedPerWallet(user), 2);
+
     }
 
     receive() external payable {}
