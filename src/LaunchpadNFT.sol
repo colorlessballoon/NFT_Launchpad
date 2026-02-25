@@ -6,13 +6,23 @@ import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import "openzeppelin-contracts/contracts/utils/cryptography/MerkleProof.sol";
 
 contract LaunchpadNFT is ERC721, Ownable(msg.sender) {
+    //合约总铸造数量
     uint256 public totalSupply;
+    //合约最大铸造数量
     uint256 public maxSupply;
+    //铸造所需金额
     uint256 public mintPrice;
+    //销售开关
     bool public isActive;
+    //merkle树root
     bytes32 public merkleRoot;
+    //记录每个地址的铸造数量
     mapping(address => uint256) public mintedPerWallet;
     uint256 public maxPerWallet;
+    //白名单销售开关
+    bool public whitelistSaleActive;
+    //公开销售开关
+    bool public publicSaleActive;
 
     constructor(
         string memory _name,
@@ -31,6 +41,14 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender) {
         isActive = _isActive;
     }
 
+    function setWhitelistSaleActive(bool _active) external onlyOwner {
+        whitelistSaleActive = _active;
+    }
+
+    function setPublicSaleActive(bool _active) external onlyOwner {
+        publicSaleActive = _active;
+    }
+
     function setMerkleRoot(bytes32 _root) external onlyOwner {
         merkleRoot = _root;
     }
@@ -41,9 +59,12 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender) {
         require(totalSupply + quantity <= maxSupply, "Max supply reached");
         require(msg.value == mintPrice * quantity, "Incorrect payment");
         require(mintedPerWallet[msg.sender] + quantity <= maxPerWallet, "Exceeds wallet limit");
-        if (merkleRoot != 0) {
-            bytes32 leaf = keccak256(abi.encodePacked(msg.sender));
-            require(MerkleProof.verify(proof, merkleRoot, leaf), "Not in whitelist");
+        require(whitelistSaleActive || publicSaleActive, "Sale not active");
+        if (whitelistSaleActive) {
+            if (merkleRoot != 0) {
+                bytes32 leaf = keccak256(abi.encodePacked(msg.sender));
+                require(MerkleProof.verify(proof, merkleRoot, leaf), "Not in whitelist");
+            }
         }
         for (uint256 i = 0; i < quantity; i++) {
             totalSupply++;
