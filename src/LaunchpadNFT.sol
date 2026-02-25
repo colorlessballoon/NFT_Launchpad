@@ -5,8 +5,9 @@ import {ERC721} from "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
 import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 import "openzeppelin-contracts/contracts/utils/cryptography/MerkleProof.sol";
 import "openzeppelin-contracts/contracts/utils/Strings.sol";
+import "openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
 
-contract LaunchpadNFT is ERC721, Ownable(msg.sender) {
+contract LaunchpadNFT is ERC721, Ownable(msg.sender), ReentrancyGuard  {
     using Strings for uint256;
     //合约总铸造数量
 
@@ -70,7 +71,16 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender) {
         revealed = true;
     }
 
-    function mint(uint256 quantity, bytes32[] memory proof) public payable {
+    function mint(uint256 quantity, bytes32[] memory _proof) external payable nonReentrant{
+        _mintLogic(quantity, _proof);
+    }
+
+    function mint(uint256 quantity) external payable nonReentrant{
+        bytes32[] memory _proof;
+        _mintLogic(quantity, _proof);
+    }
+
+    function _mintLogic(uint256 quantity, bytes32[] memory proof) internal{
         require(isActive, "Contract is not active");
         require(quantity > 0, "Quantity must be greater than 0");
         require(totalSupply + quantity <= maxSupply, "Max supply reached");
@@ -90,12 +100,7 @@ contract LaunchpadNFT is ERC721, Ownable(msg.sender) {
         mintedPerWallet[msg.sender] += quantity;
     }
 
-    function mint(uint256 quantity) external payable {
-        bytes32[] memory _proof;
-        mint(quantity, _proof);
-    }
-
-    function withdraw() external onlyOwner {
+    function withdraw() external onlyOwner nonReentrant{
         (bool success,) = payable(owner()).call{value: address(this).balance}("");
         require(success, "Transfer failed");
     }
