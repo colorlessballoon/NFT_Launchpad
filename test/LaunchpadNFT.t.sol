@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {Test} from "forge-std/Test.sol";
 import {LaunchpadNFT} from "../src/LaunchpadNFT.sol";
 import "openzeppelin-contracts/contracts/utils/Pausable.sol";
-import { 
+import {
     ContractNotActive,
     QuantityZero,
     MaxSupplyReached,
@@ -14,6 +14,7 @@ import {
     NotInWhitelist,
     TransferFailed
 } from "../src/errors/LaunchpadErrors.sol";
+
 contract LaunchpadNFTTest is Test {
     LaunchpadNFT public launchpadNFT;
 
