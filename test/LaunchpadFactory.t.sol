@@ -22,13 +22,9 @@ contract LaunchpadFactorTest is Test {
         factory = LaunchpadFactory(address(proxy));
     }
 
-    function _computeCreate2Address(
-        bytes32 salt,
-        bytes memory constructorArgs
-    ) internal view returns (address) {
+    function _computeCreate2Address(bytes32 salt, bytes memory constructorArgs) internal view returns (address) {
         bytes memory bytecode = abi.encodePacked(type(LaunchpadNFT).creationCode, constructorArgs);
-        bytes32 hash =
-            keccak256(abi.encodePacked(bytes1(0xff), address(factory), salt, keccak256(bytecode)));
+        bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(factory), salt, keccak256(bytecode)));
         return address(uint160(uint256(hash)));
     }
 
@@ -41,22 +37,17 @@ contract LaunchpadFactorTest is Test {
 
         address predicted = _computeCreate2Address(salt, args);
 
-        address deployed = factory.createLaunchpadNFT(
-            salt, "Test NFT", "TEST", 100, 0.01 ether, 2, "hidden.json", address(this), 500
-        );
+        address deployed =
+            factory.createLaunchpadNFT(salt, "Test NFT", "TEST", 100, 0.01 ether, 2, "hidden.json", address(this), 500);
         assertEq(predicted, deployed);
     }
 
     function testCreate2RevertIfSaltReused() public {
         bytes32 salt = keccak256("TEST_SALT");
 
-        factory.createLaunchpadNFT(
-            salt, "Test", "TEST", 100, 0.01 ether, 2, "hidden.json", address(this), 500
-        );
+        factory.createLaunchpadNFT(salt, "Test", "TEST", 100, 0.01 ether, 2, "hidden.json", address(this), 500);
         vm.expectRevert();
-        factory.createLaunchpadNFT(
-            salt, "Test", "TEST", 100, 0.01 ether, 2, "hidden.json", address(this), 500
-        );
+        factory.createLaunchpadNFT(salt, "Test", "TEST", 100, 0.01 ether, 2, "hidden.json", address(this), 500);
     }
 
     function testDifferentSaltDifferentAddress() public {
