@@ -14,8 +14,6 @@ contract LaunchpadFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable 
 
     event NFTCreated(address indexed nftAddress);
 
-    error AlreadyDeployed();
-
     function initialize(uint96 _platformFee, address _receiver) public initializer {
         __Ownable_init(msg.sender);
         platformFee = _platformFee;
@@ -33,23 +31,6 @@ contract LaunchpadFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable 
         address royaltyReceiver_,
         uint96 royaltyFee_
     ) external onlyOwner returns (address) {
-        bytes memory constructorArgs = abi.encode(
-            name_,
-            symbol_,
-            maxSupply_,
-            mintPrice_,
-            maxPerWallet_,
-            hiddenURI_,
-            royaltyReceiver_,
-            royaltyFee_,
-            platformFee,
-            feeReceiver
-        );
-
-        address predicted = computeAddress(salt, constructorArgs);
-
-        if (predicted.code.length != 0) revert AlreadyDeployed();
-
         LaunchpadNFT nft = new LaunchpadNFT{salt: salt}(
             name_,
             symbol_,
@@ -71,13 +52,6 @@ contract LaunchpadFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable 
         emit NFTCreated(address(nft));
 
         return address(nft);
-    }
-
-    function computeAddress(bytes32 salt, bytes memory constructorArgs) public view returns (address) {
-        bytes memory bytecode = abi.encodePacked(type(LaunchpadNFT).creationCode, constructorArgs);
-
-        bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, keccak256(bytecode)));
-        return address(uint160(uint256(hash)));
     }
 
     function getAllNFTs() external view returns (address[] memory) {
