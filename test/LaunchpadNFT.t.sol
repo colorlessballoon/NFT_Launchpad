@@ -201,7 +201,7 @@ contract LaunchpadNFTTest is Test {
         launchpadNFT.mint{value: PRICE}(1);
     }
 
-    function testRoyaltyInfo() public {
+    function testRoyaltyInfo() public view {
         (address receiver, uint256 royaltyAmount) = launchpadNFT.royaltyInfo(1, 1 ether);
         assertEq(receiver, launchpadNFT.owner());
         assertEq(royaltyAmount, 0.05 ether);
