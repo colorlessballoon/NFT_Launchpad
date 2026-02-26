@@ -61,5 +61,11 @@ contract LaunchpadFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable 
         return allNFTs;
     }
 
+    /// @notice UUPS 升级入口，保持简单的 `upgradeTo(address)` 接口，方便代理调用
+    function upgradeTo(address newImplementation) external onlyOwner {
+        // OZ v5 只提供 upgradeToAndCall，这里用空 calldata 适配
+        upgradeToAndCall(newImplementation, bytes(""));
+    }
+
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }

@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import {Test} from "forge-std/Test.sol";
 import {LaunchpadFactory} from "../src/LaunchpadFactory.sol";
+import {LaunchpadFactoryV2} from "../src/LaunchpadFactoryV2.sol";
 import {ERC1967Proxy} from "openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {LaunchpadNFT} from "../src/LaunchpadNFT.sol";
 
@@ -68,5 +69,26 @@ contract LaunchpadFactorTest is Test {
         vm.prank(user);
         nft.mint{value: 0.01 ether}(1);
         assertEq(nft.totalSupply(), 1);
+    }
+
+    function testFactoryUpgrade() public {
+        bytes32 salt = keccak256("SALT");
+        factory.createLaunchpadNFT(salt, "Test NFT", "TEST", 100, 0.01 ether, 2, "hidden.json", address(this), 500);
+        assertEq(factory.getAllNFTs().length, 1);
+
+        LaunchpadFactoryV2 newImpl = new LaunchpadFactoryV2();
+        factory.upgradeTo(address(newImpl));
+        assertEq(factory.getAllNFTs().length, 1);
+
+        LaunchpadFactoryV2 upgraded = LaunchpadFactoryV2(address(factory));
+        assertEq(upgraded.version(), "V2");
+    }
+
+    function testUpgradeOnlyOwner() public {
+        LaunchpadFactoryV2 newImpl = new LaunchpadFactoryV2();
+
+        vm.prank(user);
+        vm.expectRevert();
+        factory.upgradeTo(address(newImpl));
     }
 }
