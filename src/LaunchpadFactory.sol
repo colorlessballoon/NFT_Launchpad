@@ -9,13 +9,17 @@ import "./LaunchpadNFT.sol";
 
 contract LaunchpadFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable {
     address[] public allNFTs;
+    uint96 public platformFee;
+    address public feeReceiver;
 
     event NFTCreated(address indexed nftAddress);
 
     error AlreadyDeployed();
 
-    function initialize() public initializer {
+    function initialize(uint96 _platformFee, address _receiver) public initializer {
         __Ownable_init(msg.sender);
+        platformFee = _platformFee;
+        feeReceiver = _receiver;
     }
 
     function createLaunchpadNFT(
@@ -29,15 +33,34 @@ contract LaunchpadFactory is Initializable, OwnableUpgradeable, UUPSUpgradeable 
         address royaltyReceiver_,
         uint96 royaltyFee_
     ) external onlyOwner returns (address) {
-        bytes memory constructorArgs =
-            abi.encode(name_, symbol_, maxSupply_, mintPrice_, maxPerWallet_, hiddenURI_, royaltyReceiver_, royaltyFee_);
+        bytes memory constructorArgs = abi.encode(
+            name_,
+            symbol_,
+            maxSupply_,
+            mintPrice_,
+            maxPerWallet_,
+            hiddenURI_,
+            royaltyReceiver_,
+            royaltyFee_,
+            platformFee,
+            feeReceiver
+        );
 
         address predicted = computeAddress(salt, constructorArgs);
 
         if (predicted.code.length != 0) revert AlreadyDeployed();
 
         LaunchpadNFT nft = new LaunchpadNFT{salt: salt}(
-            name_, symbol_, maxSupply_, mintPrice_, maxPerWallet_, hiddenURI_, royaltyReceiver_, royaltyFee_
+            name_,
+            symbol_,
+            maxSupply_,
+            mintPrice_,
+            maxPerWallet_,
+            hiddenURI_,
+            royaltyReceiver_,
+            royaltyFee_,
+            platformFee,
+            feeReceiver
         );
 
         // 将 NFT 的拥有者从工厂合约转移给当前调用者（例如测试合约或前端调用者）

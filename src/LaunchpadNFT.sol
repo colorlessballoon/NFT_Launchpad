@@ -42,6 +42,9 @@ contract LaunchpadNFT is ERC721A, Ownable(msg.sender), ERC2981, ReentrancyGuard,
     string public hiddenURI;
     bool public revealed;
 
+    uint256 public platformFee;
+    address public feeReceiver;
+
     constructor(
         string memory _name,
         string memory _symbol,
@@ -50,7 +53,9 @@ contract LaunchpadNFT is ERC721A, Ownable(msg.sender), ERC2981, ReentrancyGuard,
         uint256 _maxPerWallet,
         string memory _hiddenURI,
         address royaltyReceiver,
-        uint96 royaltyFee
+        uint96 royaltyFee,
+        uint256 _platformFee,
+        address _feeReceiver
     ) ERC721A(_name, _symbol) {
         maxSupply = _maxSupply;
         mintPrice = _mintPrice;
@@ -58,6 +63,8 @@ contract LaunchpadNFT is ERC721A, Ownable(msg.sender), ERC2981, ReentrancyGuard,
         maxPerWallet = _maxPerWallet;
         hiddenURI = _hiddenURI;
         _setDefaultRoyalty(royaltyReceiver, royaltyFee);
+        platformFee = _platformFee;
+        feeReceiver = _feeReceiver;
     }
 
     function _startTokenId() internal pure override returns (uint256) {
@@ -123,8 +130,13 @@ contract LaunchpadNFT is ERC721A, Ownable(msg.sender), ERC2981, ReentrancyGuard,
     }
 
     function withdraw() external onlyOwner nonReentrant {
-        (bool success,) = payable(owner()).call{value: address(this).balance}("");
-        if (!success) revert TransferFailed();
+        uint256 balance = address(this).balance;
+        uint256 feeAmount = (balance * platformFee) / 10000;
+        uint256 creatorAmount = balance - feeAmount;
+
+        (bool successFee,) = payable(feeReceiver).call{value: feeAmount}("");
+        (bool successCreator,) = payable(owner()).call{value: creatorAmount}("");
+        if (!successFee || !successCreator) revert TransferFailed();
     }
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {

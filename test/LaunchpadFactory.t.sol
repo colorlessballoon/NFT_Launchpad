@@ -10,10 +10,14 @@ import {LaunchpadNFT} from "../src/LaunchpadNFT.sol";
 contract LaunchpadFactorTest is Test {
     LaunchpadFactory factory;
     address user = address(0xf12);
+    uint96 constant PLATFORM_FEE = 500; // 5%
+    address public platform = address(0x9999);
 
     function setUp() public {
         LaunchpadFactory implementation = new LaunchpadFactory();
-        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), abi.encodeCall(LaunchpadFactory.initialize, ()));
+        ERC1967Proxy proxy = new ERC1967Proxy(
+            address(implementation), abi.encodeCall(LaunchpadFactory.initialize, (PLATFORM_FEE, platform))
+        );
 
         factory = LaunchpadFactory(address(proxy));
     }
@@ -21,7 +25,9 @@ contract LaunchpadFactorTest is Test {
     function testCreate2AddressPrediction() public {
         bytes32 salt = keccak256("TEST_SALT");
 
-        bytes memory args = abi.encode("Test NFT", "TEST", 100, 0.01 ether, 2, "hidden.json", address(this), 500);
+        bytes memory args = abi.encode(
+            "Test NFT", "TEST", 100, 0.01 ether, 2, "hidden.json", address(this), 500, PLATFORM_FEE, platform
+        );
 
         address predicted = factory.computeAddress(salt, args);
 

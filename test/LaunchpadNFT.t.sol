@@ -25,6 +25,8 @@ contract LaunchpadNFTTest is Test {
     uint256 constant MAX_SUPPLY = 100;
     uint256 constant PRICE = 0.01 ether;
     uint256 constant MAX_PER_WALLET = 2;
+    uint256 constant PLATFORM_FEE = 500; // 5%
+    address public platform = address(0x1234);
 
     /*//////////////////////////////////////////////////////////////
                                 SETUP
@@ -32,7 +34,16 @@ contract LaunchpadNFTTest is Test {
 
     function setUp() public {
         launchpadNFT = new LaunchpadNFT(
-            "LaunchpadNFT", "LPNFT", MAX_SUPPLY, PRICE, MAX_PER_WALLET, "hidden.json", address(this), 500
+            "LaunchpadNFT",
+            "LPNFT",
+            MAX_SUPPLY,
+            PRICE,
+            MAX_PER_WALLET,
+            "hidden.json",
+            address(this),
+            500,
+            PLATFORM_FEE,
+            platform
         );
         launchpadNFT.setActive(true);
         proof.push(0x999bf57501565dbd2fdcea36efa2b9aef8340a8901e3459f4a4c926275d36cdb);
@@ -81,7 +92,9 @@ contract LaunchpadNFTTest is Test {
     //////////////////////////////////////////////////////////////*/
 
     function testMintRevertIfExceedsMaxSupply() public {
-        LaunchpadNFT nft = new LaunchpadNFT("TestNFT", "TNFT", 100, PRICE, 200, "hidden.json", address(this), 500);
+        LaunchpadNFT nft = new LaunchpadNFT(
+            "TestNFT", "TNFT", 100, PRICE, 200, "hidden.json", address(this), 500, PLATFORM_FEE, platform
+        );
 
         nft.setActive(true);
         nft.setPublicSaleActive(true);
@@ -158,13 +171,22 @@ contract LaunchpadNFTTest is Test {
         vm.prank(user);
         launchpadNFT.mint{value: PRICE}(1);
 
+        uint256 platformBalanceBefore = platform.balance;
         uint256 ownerBalanceBefore = address(this).balance;
 
         launchpadNFT.withdraw();
 
+        uint256 platformBalanceAfter = platform.balance;
         uint256 ownerBalanceAfter = address(this).balance;
 
-        assertGt(ownerBalanceAfter, ownerBalanceBefore);
+        uint256 platformDelta = platformBalanceAfter - platformBalanceBefore;
+        uint256 ownerDelta = ownerBalanceAfter - ownerBalanceBefore;
+
+        // 平台与创作者都应拿到一部分
+        assertGt(platformDelta, 0);
+        assertGt(ownerDelta, 0);
+        // 两者之和等于合约收到的总金额
+        assertEq(platformDelta + ownerDelta, PRICE);
     }
 
     /*//////////////////////////////////////////////////////////////
