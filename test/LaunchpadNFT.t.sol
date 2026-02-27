@@ -54,6 +54,8 @@ contract LaunchpadNFTTest is Test {
     //////////////////////////////////////////////////////////////*/
 
     function testPublicMintSuccess() public {
+        vm.expectEmit(false, false, false, false);
+        emit LaunchpadNFT.PublicSaleActiveUpdated(true);
         launchpadNFT.setPublicSaleActive(true);
 
         vm.deal(user, 1 ether);
@@ -116,7 +118,12 @@ contract LaunchpadNFTTest is Test {
     //////////////////////////////////////////////////////////////*/
 
     function testWhitelistMintSuccess() public {
+        vm.expectEmit(false, false, false, false);
+        emit LaunchpadNFT.WhitelistSaleActiveUpdated(true);
         launchpadNFT.setWhitelistSaleActive(true);
+
+        vm.expectEmit(false, false, false, false);
+        emit LaunchpadNFT.MerkleRootUpdated(merkleRoot);
         launchpadNFT.setMerkleRoot(merkleRoot);
         vm.deal(user, 1 ether);
 
@@ -207,7 +214,13 @@ contract LaunchpadNFTTest is Test {
         vm.deal(user, 1 ether);
         vm.prank(user);
         launchpadNFT.mint{value: PRICE}(1);
+
+        vm.expectEmit(false, false, false, false);
+        emit LaunchpadNFT.BaseURIUpdated("ipfs://base/");
         launchpadNFT.setBaseURI("ipfs://base/");
+
+        vm.expectEmit(false, false, false, false);
+        emit LaunchpadNFT.Revealed();
         launchpadNFT.reveal();
         string memory uri = launchpadNFT.tokenURI(1);
         assertEq(uri, "ipfs://base/1.json");

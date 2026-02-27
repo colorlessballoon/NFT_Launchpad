@@ -45,6 +45,14 @@ contract LaunchpadNFT is ERC721A, Ownable(msg.sender), ERC2981, ReentrancyGuard,
     uint256 public platformFee;
     address public feeReceiver;
 
+    event ActiveUpdated(bool isActive);
+    event WhitelistSaleActiveUpdated(bool active);
+    event PublicSaleActiveUpdated(bool active);
+    event MerkleRootUpdated(bytes32 merkleRoot);
+    event BaseURIUpdated(string baseURI);
+    event Revealed();
+    event Withdrawn(uint256 balance, uint256 feeAmount, uint256 creatorAmount);
+
     constructor(
         string memory _name,
         string memory _symbol,
@@ -73,26 +81,32 @@ contract LaunchpadNFT is ERC721A, Ownable(msg.sender), ERC2981, ReentrancyGuard,
 
     function setActive(bool _isActive) external onlyOwner {
         isActive = _isActive;
+        emit ActiveUpdated(_isActive);
     }
 
     function setWhitelistSaleActive(bool _active) external onlyOwner {
         whitelistSaleActive = _active;
+        emit WhitelistSaleActiveUpdated(_active);
     }
 
     function setPublicSaleActive(bool _active) external onlyOwner {
         publicSaleActive = _active;
+        emit PublicSaleActiveUpdated(_active);
     }
 
     function setMerkleRoot(bytes32 _root) external onlyOwner {
         merkleRoot = _root;
+        emit MerkleRootUpdated(_root);
     }
 
     function setBaseURI(string memory _baseURI) external onlyOwner {
         baseTokenURI = _baseURI;
+        emit BaseURIUpdated(_baseURI);
     }
 
     function reveal() external onlyOwner {
         revealed = true;
+        emit Revealed();
     }
 
     function pause() external onlyOwner {
@@ -137,6 +151,7 @@ contract LaunchpadNFT is ERC721A, Ownable(msg.sender), ERC2981, ReentrancyGuard,
         (bool successFee,) = payable(feeReceiver).call{value: feeAmount}("");
         (bool successCreator,) = payable(owner()).call{value: creatorAmount}("");
         if (!successFee || !successCreator) revert TransferFailed();
+        emit Withdrawn(balance, feeAmount, creatorAmount);
     }
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
